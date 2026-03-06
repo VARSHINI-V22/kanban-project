@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanban · full control (add to any column)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      background: #f4f5f8;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+    }
+    .kanban-container {
+      max-width: 1200px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+      padding: 2rem 1.5rem 1.5rem 1.5rem;
+    }
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+    }
+    .sub {
+      color: #64748b;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+      border-left: 4px solid #a5b4fc;
+      padding-left: 1rem;
+      background: #f8fafc;
+      border-radius: 0 1rem 1rem 0;
+      line-height: 1.5;
+    }
+    .add-section {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      background: #f1f5f9;
+      padding: 1.2rem 1.5rem;
+      border-radius: 1.5rem;
+      align-items: center;
+    }
+    .add-section label {
+      font-weight: 500;
+      color: #334155;
+    }
+    #newTaskInput {
+      flex: 1 1 250px;
+      padding: 0.8rem 1.2rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 2rem;
+      font-size: 1rem;
+      background: white;
+      transition: 0.15s;
+      outline: none;
+    }
+    #newTaskInput:focus {
+      border-color: #818cf8;
+      box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3);
+    }
+    #columnSelect {
+      padding: 0.8rem 1.5rem;
+      border-radius: 2rem;
+      border: 2px solid #e2e8f0;
+      background: white;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #1e293b;
+      cursor: pointer;
+      outline: none;
+      transition: border 0.15s;
+    }
+    #columnSelect:focus {
+      border-color: #818cf8;
+    }
+    #addBtn {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      padding: 0.8rem 2rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      box-shadow: 0 8px 14px -8px #4f46e580;
+      border: 1px solid #6366f1;
+    }
+    #addBtn:hover {
+      background: #6366f1;
+    }
+    #addBtn:active {
+      transform: scale(0.97);
+    }
+    .board {
+      display: flex;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .column {
+      background: #f8fafc;
+      border-radius: 1.8rem;
+      flex: 1 1 260px;
+      min-width: 260px;
+      padding: 1.5rem 1rem 1rem 1rem;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02), 0 4px 12px rgba(0,0,0,0.05);
+      border: 1px solid #e9eef2;
+      transition: background 0.2s;
+    }
+    .column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.2rem;
+      padding: 0 0.25rem;
+    }
+    .column-header h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #0f172a;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .badge {
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 30px;
+    }
+    .cards-container {
+      min-height: 280px;
+      transition: background 0.2s;
+      border-radius: 1.2rem;
+      padding: 0.2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 1.2rem;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.9rem;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.03), 0 2px 2px rgba(0,0,0,0.05);
+      border: 1px solid #dee4ea;
+      cursor: grab;
+      transition: all 0.15s, box-shadow 0.2s, border-color 0.2s;
+      font-weight: 500;
+      color: #1e293b;
+      word-break: break-word;
+      position: relative;
+      user-select: none;
+    }
+    .card:active {
+      cursor: grabbing;
+      box-shadow: 0 12px 20px -12px rgba(79, 70, 229, 0.4);
+      border-color: #a5b4fc;
+      transform: rotate(0.5deg) scale(1.02);
+      background: #fefefe;
+    }
+    .card.dragging {
+      opacity: 0.5;
+      transform: scale(0.98);
+    }
+    .delete-hint {
+      font-size: 0.7rem;
+      color: #f43f5e;
+      text-align: right;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .column.drag-over .cards-container {
+      background-color: #ede9fe;
+      border: 2px dashed #818cf8;
+    }
+    .footer-note {
+      margin-top: 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="kanban-container">
+  <h1>📋 Kanban · full flexibility</h1>
+  <div class="sub"> Drag tasks · double‑click to delete · choose column when adding</div>
+
+  <!-- add new task with column selector -->
+  <div class="add-section">
+    <label for="newTaskInput">New task</label>
+    <input type="text" id="newTaskInput" placeholder="e.g., Review pull request" autocomplete="off">
+    
+    <!-- dropdown to select target column -->
+    <select id="columnSelect">
+      <option value="todo"> To Do</option>
+      <option value="progress"> In Progress</option>
+      <option value="done"> Done</option>
+    </select>
+
+    <button id="addBtn">Add task</button>
+  </div>
+
+  <!-- kanban columns -->
+  <div class="board" id="board">
+    <div class="column" data-status="todo" id="col-todo">
+      <div class="column-header">
+        <h2> To Do <span class="badge" id="todo-count">0</span></h2>
+      </div>
+      <div class="cards-container" id="todo-cards"></div>
+    </div>
+
+    <div class="column" data-status="progress" id="col-progress">
+      <div class="column-header">
+        <h2>In Progress <span class="badge" id="progress-count">0</span></h2>
+      </div>
+      <div class="cards-container" id="progress-cards"></div>
+    </div>
+
+    <div class="column" data-status="done" id="col-done">
+      <div class="column-header">
+        <h2>Done <span class="badge" id="done-count">0</span></h2>
+      </div>
+      <div class="cards-container" id="done-cards"></div>
+    </div>
+  </div>
+  <div class="footer-note">
+    double‑click any card to delete it · counters update automatically
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ----- initial sample tasks -----
+    let tasks = [
+      { id: 'task-1', title: 'to build weather app', status: 'todo' },
+     // { id: 'task-2', title: 'Write API documentation', status: 'todo' },
+      { id: 'task-3', title: 'learning html ,CSS, js in advance ', status: 'progress' },
+     // { id: 'task-4', title: 'Test on mobile', status: 'progress' },
+      { id: 'task-5', title: 'Deploy to preview', status: 'done' },
+      //{ id: 'task-6', title: 'Team sync', status: 'done' },
+    ];
+
+    // unique id generator
+    function generateId() {
+      return 'task-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8);
+    }
+
+    // ----- DOM elements -----
+    const todoContainer = document.getElementById('todo-cards');
+    const progressContainer = document.getElementById('progress-cards');
+    const doneContainer = document.getElementById('done-cards');
+    const todoBadge = document.getElementById('todo-count');
+    const progressBadge = document.getElementById('progress-count');
+    const doneBadge = document.getElementById('done-count');
+
+    const newTaskInput = document.getElementById('newTaskInput');
+    const columnSelect = document.getElementById('columnSelect');
+    const addBtn = document.getElementById('addBtn');
+
+    // helper: get container by status
+    function getContainerByStatus(status) {
+      if (status === 'todo') return todoContainer;
+      if (status === 'progress') return progressContainer;
+      if (status === 'done') return doneContainer;
+    }
+
+    // update badge counts
+    function updateCounts() {
+      todoBadge.textContent = tasks.filter(t => t.status === 'todo').length;
+      progressBadge.textContent = tasks.filter(t => t.status === 'progress').length;
+      doneBadge.textContent = tasks.filter(t => t.status === 'done').length;
+    }
+
+    // ----- RENDER BOARD -----
+    function renderBoard() {
+      todoContainer.innerHTML = '';
+      progressContainer.innerHTML = '';
+      doneContainer.innerHTML = '';
+
+      tasks.forEach(task => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.setAttribute('draggable', 'true');
+        card.dataset.id = task.id;
+        card.textContent = task.title;
+
+        // double‑click to delete
+        card.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          const id = card.dataset.id;
+          tasks = tasks.filter(t => t.id !== id);
+          renderBoard();
+        });
+
+        // drag start
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', () => {
+          document.querySelectorAll('.column').forEach(col => col.classList.remove('drag-over'));
+        });
+
+        const container = getContainerByStatus(task.status);
+        if (container) container.appendChild(card);
+      });
+
+      updateCounts();
+    }
+
+    // ----- DRAG & DROP -----
+    function handleDragStart(e) {
+      const card = e.target.closest('.card');
+      if (!card) return;
+      e.dataTransfer.setData('text/plain', card.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+      card.classList.add('dragging');
+      setTimeout(() => card.classList.remove('dragging'), 0);
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const column = e.currentTarget.closest('.column');
+      if (column) column.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+      const column = e.currentTarget.closest('.column');
+      if (column) column.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const column = e.currentTarget.closest('.column');
+      if (!column) return;
+      column.classList.remove('drag-over');
+
+      const newStatus = column.dataset.status;
+      const taskId = e.dataTransfer.getData('text/plain');
+      if (!taskId) return;
+
+      const taskIndex = tasks.findIndex(t => t.id === taskId);
+      if (taskIndex === -1) return;
+
+      const task = tasks[taskIndex];
+      if (task.status === newStatus) return;
+
+      task.status = newStatus;
+      renderBoard();
+    }
+
+    // attach drop / dragover listeners to columns
+    function setupColumnDropZones() {
+      const columns = document.querySelectorAll('.column');
+      columns.forEach(col => {
+        col.addEventListener('dragover', handleDragOver);
+        col.addEventListener('dragleave', handleDragLeave);
+        col.addEventListener('drop', handleDrop);
+      });
+    }
+
+    // ----- ADD NEW TASK (with selected column) -----
+    function addNewTask() {
+      const title = newTaskInput.value.trim();
+      if (title === '') {
+        alert('Please enter a task title');
+        return;
+      }
+
+      const targetStatus = columnSelect.value; // 'todo', 'progress', or 'done'
+
+      const newTask = {
+        id: generateId(),
+        title: title,
+        status: targetStatus
+      };
+      tasks.push(newTask);
+      renderBoard();
+      newTaskInput.value = '';      // clear input
+      newTaskInput.focus();
+    }
+
+    // event listeners for adding
+    addBtn.addEventListener('click', addNewTask);
+    newTaskInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addNewTask();
+    });
+
+    // initial render
+    renderBoard();
+    setupColumnDropZones();
+
+    // clean drag-over class on global dragend
+    document.addEventListener('dragend', () => {
+      document.querySelectorAll('.column').forEach(col => col.classList.remove('drag-over'));
+    });
+  })();
+</script>
+</body>
+</html>
